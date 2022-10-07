@@ -135,6 +135,48 @@ plt.imshow(frames[25])
 # plt.hlines(150, 20, 900, color = 'black', linestyles = 'dashed')
 
 
+#I need to save plots of this analysis to confirm it is doing what I want it to do.
+#I want to plot the left and right and make it white in the 
+def fill_pipette(frame, edges):
+    filled = np.empty((frame.shape[0],frame.shape[1]))
+    for k in range(frame.shape[0]):
+        for j in range(frame.shape[1]):
+            if frame[k,j] > edges.max & edges.min:
+                filled[k,j] = 0
+            else:
+                filled[k,j] = 1
+    return filled
+​
+#go from top to bottom, then go left to right
+#when you hit a peak value, make it white all the way to the next edge
+for frame in frames[0]:
+    filled = np.empty((frame.shape[0],frame.shape[1]))
+    edges = edge_results[edge_results.frame==frame]
+    for k in range(frame.shape[1]):
+        for j in range(frame.shape[0]):
+            if frame[k,j] = edge_results.peak
+#%%f
+filled = np.empty((frame.shape[0],frame.shape[1]))
+for p in test.peak.unique():
+    right = test[test.peak==p].x_val.min()
+    left = test[test.peak==p].x_val.max()
+    if test[test.peak==p] is empty:
+        right = test[test.peak==p-1].x_val.min()
+        left = test[test.peak==p-1].x_val.max()
+    filled[p, right:left]=1
+
+plt.figure()
+plt.imshow(filled)
+
+#%%
+filled = np.empty((frame.shape[0],frame.shape[1]))
+for x in test.x_val.unique():
+    top = test[test.x_val==x].peak.min()
+    bottom = test.peak.min()
+    filled[bottom:top,x]=1
+
+plt.figure()
+plt.imshow(filled)
 #%%
 
 
@@ -154,7 +196,7 @@ rpm = int(re.search('\d+rpm',filename).group(0).split('rpm')[0])
 frame_rate = float(re.search('\d+.\d+ramp',filename).group(0).split('ramp')[0])
 rotation_speed = rpm/60
 
-Aggregate_structure.to_csv(directory + 'shapeData.csv')
+# Aggregate_structure.to_csv(directory + 'shapeData.csv')
 
 data = pd.DataFrame()
 
@@ -168,7 +210,7 @@ data['filename'] = [filename]
 
 rotation_data = rotation_data.append(data)
 
-rotation_data.to_csv('D:/Johnathan/SpinningDrops/092022/30092022/2SDS/2SDSlarge_170.21Hz/Data.csv')
+# rotation_data.to_csv('D:/Johnathan/SpinningDrops/092022/30092022/2SDS/2SDSlarge_170.21Hz/Data.csv')
 
 # Aggregate_structure['vol'] = edge_results.groupby('frame').apply(lambda x: characterize_structure(x))
 # Aggregate_structure['frame'] = Aggregate_structure.index
