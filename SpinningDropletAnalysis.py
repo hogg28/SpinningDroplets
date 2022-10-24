@@ -137,25 +137,26 @@ plt.imshow(frames[25])
 
 #I need to save plots of this analysis to confirm it is doing what I want it to do.
 #I want to plot the left and right and make it white in the 
-def fill_pipette(frame, edges):
-    filled = np.empty((frame.shape[0],frame.shape[1]))
-    for k in range(frame.shape[0]):
-        for j in range(frame.shape[1]):
-            if frame[k,j] > edges.max & edges.min:
-                filled[k,j] = 0
-            else:
-                filled[k,j] = 1
-    return filled
-​
+# def fill_pipette(frame, edges):
+#     filled = np.empty((frame.shape[0],frame.shape[1]))
+#     for k in range(frame.shape[0]):
+#         for j in range(frame.shape[1]):
+#             if frame[k,j] > edges.max & edges.min:
+#                 filled[k,j] = 0
+#             else:
+#                 filled[k,j] = 1
+#     return filled
+
 #go from top to bottom, then go left to right
 #when you hit a peak value, make it white all the way to the next edge
-for frame in frames[0]:
-    filled = np.empty((frame.shape[0],frame.shape[1]))
-    edges = edge_results[edge_results.frame==frame]
-    for k in range(frame.shape[1]):
-        for j in range(frame.shape[0]):
-            if frame[k,j] = edge_results.peak
-#%%f
+# for frame in frames[0]:
+#     filled = np.empty((frame.shape[0],frame.shape[1]))
+#     edges = edge_results[edge_results.frame==frame]
+#     for k in range(frame.shape[1]):
+#         for j in range(frame.shape[0]):
+#             if frame[k,j] = edge_results.peak
+#%%
+test = frames[20]
 filled = np.empty((frame.shape[0],frame.shape[1]))
 for p in test.peak.unique():
     right = test[test.peak==p].x_val.min()
@@ -169,14 +170,14 @@ plt.figure()
 plt.imshow(filled)
 
 #%%
-filled = np.empty((frame.shape[0],frame.shape[1]))
-for x in test.x_val.unique():
-    top = test[test.x_val==x].peak.min()
-    bottom = test.peak.min()
-    filled[bottom:top,x]=1
+# filled = np.empty((frame.shape[0],frame.shape[1]))
+# for x in test.x_val.unique():
+#     top = test[test.x_val==x].peak.min()
+#     bottom = test.peak.min()
+#     filled[bottom:top,x]=1
 
-plt.figure()
-plt.imshow(filled)
+# plt.figure()
+# plt.imshow(filled)
 #%%
 
 
