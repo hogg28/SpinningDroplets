@@ -28,7 +28,7 @@ from skimage.filters import sobel, gaussian, unsharp_mask
 import re
 
 
-rotation_data = pd.read_csv('D:/Johnathan/SpinningDrops/092022/30092022/2SDS/2SDSlarge_170.21Hz/Data.csv')
+rotation_data = pd.read_csv('F:/Johnathan/SpinningDrops/092022/30092022/2SDS/2SDSlarge_170.21Hz/Data.csv')
 
 ### Import image sequence ###
 
@@ -38,15 +38,15 @@ mpl.rc('image', cmap='gray')
 def preprocess_img(frame):
     
     frame = np.rot90(frame)
-    frame = rotate(frame, angle=6)
-    frame = frame[100:600,50:1020]
+    # frame = rotate(frame, angle=6)
+    # frame = frame[100:600,50:1020]
     # frame = gaussian(frame, sigma = 3)
     # frame = unsharp_mask(frame, radius = 2, amount = 3)
     # frame *= 255.0/frame.max()
     return frame
 
 
-directory = 'D:/Johnathan/SpinningDrops/092022/30092022/2SDS/2SDSlarge_170.21Hz/rampup/1554rpm5.5V170.2rampup/'
+directory = 'F:/Johnathan/SpinningDrops/092022/30092022/2SDS/2SDSlarge_170.21Hz/rampup/1554rpm5.5V170.2rampup/'
 prefix = '*.tiff'
 
 
@@ -56,7 +56,24 @@ frames = preprocess_img(pims.ImageSequence(os.path.join(directory+prefix)))
 
 plt.imshow(frames[20])
 #%%
+def auto_rotate(frame):
+    left_side = frame[:,0]
+    right_side = frame[:,1024]
+    #find peak on both left a
+    for i in range(len(avg_pos)-c):
+    slope.append((avg_pos[i]-avg_pos[i+c])/(c))
+    second_derv = []
+    for i in range(len(slope)-1):
+        second_derv.append((slope[i]-slope[i+1]))
+        
+    right_peak = signal.find_peaks(-np.array(slope), prominence = 2.5)[0]
+    
+    if right_peak.size == 0:
+        right_peak = signal.find_peaks(np.array(second_derv), prominence = 2.5)[0]
+    return(new_frame)
 
+
+#%%
 
 plt.plot(frames[0][:,0])
 
