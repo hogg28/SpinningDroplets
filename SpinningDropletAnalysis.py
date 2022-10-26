@@ -57,20 +57,38 @@ frames = preprocess_img(pims.ImageSequence(os.path.join(directory+prefix)))
 plt.imshow(frames[20])
 #%%
 def auto_rotate(frame):
+    c=1
     left_side = frame[:,0]
     right_side = frame[:,1024]
-    #find peak on both left a
-    for i in range(len(avg_pos)-c):
-    slope.append((avg_pos[i]-avg_pos[i+c])/(c))
-    second_derv = []
-    for i in range(len(slope)-1):
-        second_derv.append((slope[i]-slope[i+1]))
-        
-    right_peak = signal.find_peaks(-np.array(slope), prominence = 2.5)[0]
-    
-    if right_peak.size == 0:
-        right_peak = signal.find_peaks(np.array(second_derv), prominence = 2.5)[0]
-    return(new_frame)
+    left_slope = []
+    right_slope = []
+    for i in range(len(left_side)-c):
+        left_slope.append((avg_pos[i]-avg_pos[i+c])/(c))
+    for i in range(len(right_side)-c):
+        right_slope.append((avg_pos[i]-avg_pos[i+c])/(c))
+
+    #find peak on both left and right
+    left_peak = signal.find_peaks(-np.array(left_slope), prominence = 2.5)[0]
+    right_peak = signal.find_peaks(-np.array(right_slope), prominence = 2.5)[0]
+    while np.abs(left_peak - right_peak)>3:
+        angle = 1
+        left_side = frame[:,0]
+        right_side = frame[:,1024]
+        left_slope = []
+        right_slope = []
+        for i in range(len(left_side)-c):
+            left_slope.append((avg_pos[i]-avg_pos[i+c])/(c))
+        for i in range(len(right_side)-c):
+            right_slope.append((avg_pos[i]-avg_pos[i+c])/(c))
+        left_peak = signal.find_peaks(-np.array(left_slope), prominence = 2.5)[0]
+        right_peak = signal.find_peaks(-np.array(right_slope), prominence = 2.5)[0]
+        if np.abs((left_peak - right_peak))<15:
+            angle = 0.1
+        if left_peak - right_peak > 0:
+            frame = rotate(frame, angle=angle)
+        elif left_peak - right_peak < 0:
+            frame = rotate(frame, angle=-angle)
+    return(frame)
 
 
 #%%
