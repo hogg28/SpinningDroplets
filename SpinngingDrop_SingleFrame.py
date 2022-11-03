@@ -15,7 +15,8 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 from scipy import signal
 from scipy import optimize
-from scipy.ndimage.interpolation import rotate
+from scipy.ndimage import rotate
+from scipy.interpolate import interp1d
 import re
 #2.5 um/px
 
@@ -74,13 +75,13 @@ def preprocess_img(frame):
     frame = np.rot90(frame)
     frame = np.rot90(frame)
 
-    # frame= auto_rotate(frame)
-    # frame = frame[100:700,100:1150]
+    frame= auto_rotate(frame)
+    frame = frame[100:700,100:1150]
 
     return frame
 
 
-directory = 'F:/Angela/28102022/2SDS_loop_c_3V_6V/a_ramp_up/5.0V_1396RPM_22.8Hz/'
+directory = 'D:/Angela/28102022/2SDS_loop_c_3V_6V/a_ramp_up/5.0V_1396RPM_22.8Hz/'
 prefix = '*.tiff'
 
 
@@ -115,51 +116,6 @@ def find_edges(frame, idx):
                                               },])
     return edge_results
 
-def find_left_edge(frame, idx):
-    edge_results = pd.DataFrame(columns=['peak','y_val','frame'])
-    for y in range(0,len(frame)):
-        pos = frame[y,:]
-        c=20
-        avg_pos = moving_average(pos, n=c)
-        slope = []
-
-        for i in range(len(avg_pos)-c):
-            slope.append((avg_pos[i]-avg_pos[i+c])/(c))
-        peak = signal.find_peaks(np.array(slope), prominence = 2.5)[0]
-        
-
-        if peak.size == 0:
-            peak = np.array([-c])
-        edge_results = edge_results.append([{'peak': peak.min() +c,
-                                              'y_val': y,
-                                              'frame': idx,
-                                              },])
-        return(edge_results)
-
-
-
-
-
-def find_right_edge(frame, idx):
-    edge_results = pd.DataFrame(columns=['peak','y_val','frame'])
-    for y in range(0,len(frame)):
-        pos = frame[y,:]
-        c=20
-        avg_pos = moving_average(pos, n=c)
-        slope = []
-
-        for i in range(len(avg_pos)-c):
-            slope.append((avg_pos[i]-avg_pos[i+c])/(c))
-        peak = signal.find_peaks(-np.array(slope), prominence = 2.5)[0]
-
-        if peak.size == 0:
-            peak = np.array([-c])
-
-        edge_results = edge_results.append([{'peak': peak.min() +c,
-                                              'y_val': y,
-                                              'frame': idx,
-                                              },])
-        return edge_results
 
 #%%
 
@@ -391,12 +347,7 @@ plt.show()
 #%%
 #plot new frame with white over the mask used for volume of rotation
 plt.figure()
-plt.imshow(new_frame)
-
-
-
-left_edge = find_left_edge(new_frame, 20)
-right_edge = find_right_edge(new_frame, 20)
+# plt.imshow(new_frame)
 
 #Subtract off y-value of lens from y-value of peak find height of aggregate
 def find_lens_edge(x, xc, yc, r):
@@ -406,33 +357,45 @@ edge_results['y_val'] = np.array(edge_results.groupby('x_val').apply(lambda x: x
 edge_results['y_lens'] = np.array(edge_results.groupby('x_val').apply(lambda x: find_lens_edge(x.name,xc,yc,r)))
 height = edge_results.y_val.max()
 
-from scipy.interpolate import interp1d
 
 x_val = edge_results.x_val
 y_val = edge_results.y_val
 f = interp1d(x_val, y_val)
-x_new = np.arange(1, len(frame[0]), 1 )
-plt.plot(x_new, f(x_new))
+x_new = np.arange(0, len(new_frame[0])-1,  0.05)
+plt.plot(x_new, f(x_new), 'ro')
+y_new = f(x_new)
+
+interpolated_edges = pd.DataFrame()
+interpolated_edges['x_new'] = x_new
+interpolated_edges['y_new'] = f(x_new)
 
 #Find the exact shape of the aggregate
-bin_edges = np.arange(1, edge_results.y_val.max()+1, 1)
+bin_edges = np.arange(2, edge_results.y_val.max(), 1)
 D = []
 for i in range(len(bin_edges)-1):
-    y_bottom = bin_edges[i]
-    y_top = bin_edges[i+1]
-    y_mid = (y_top+y_bottom)/2 + 120
+    y_bottom = bin_edges[i]-0.5
+    y_top = bin_edges[i+1]+0.5
+    y_mid = (y_top+y_bottom)/2
     
+    # x_left = edge_results[(edge_results.peak>y_bottom) & (edge_results.peak<y_top)].x_val.min()
+    # x_right = edge_results[(edge_results.peak>y_bottom) & (edge_results.peak<y_top)].x_val.max()
     
-    x_left = edge_results[(edge_results.y_val>y_bottom) & (edge_results.y_val<y_top)].x_val.min()
-    x_right = edge_results[(edge_results.y_val>y_bottom) & (edge_results.y_val<y_top)].x_val.max()
+    # x_left = edge_results[(edge_results.y_new>y_bottom) & (edge_results.y_new<y_top)].x_new.min()
+    # x_right = edge_results[(edge_results.y_new>y_bottom) & (edge_results.y_new<y_top)].x_new.max()
     
-    # y_mid = (y_top+y_bottom)/2 + edge_results[edge_results.x_val == x_left].y_lens.iloc[0]
+    x_left = interpolated_edges[(interpolated_edges.y_new>y_bottom) & (interpolated_edges.y_new<y_top)].x_new.min()
+    x_right = interpolated_edges[(interpolated_edges.y_new>y_bottom) & (interpolated_edges.y_new<y_top)].x_new.max()
     
-    plt.plot([x_left,x_right], [y_mid,y_mid], c='C0')
+    # y_mid = (y_top+y_bottom)/2 + edge_results[edge_results.x_val == np.floor(x_right)].y_lens.iloc[0]
+    # y_mid = y_bottom  + edge_results[edge_results.x_val == np.floor(x_right)].y_lens.iloc[0]
+    y_mid = (y_top+y_bottom)/2
+    
+    # plt.plot([x_left,x_right], [y_mid,y_mid], c='C0')
     
     D.append(x_right-x_left)
 
 D = np.array(D)
+plt.ylim([0,600])
 
 circumfrence = np.pi*D
 volume = np.pi*(D/2)**2
