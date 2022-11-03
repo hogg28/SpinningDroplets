@@ -19,13 +19,10 @@ import os
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 from scipy import signal
-import time
-from scipy.optimize import curve_fit
-from skimage import feature
-import numpy as np
+from scipy import optimize
 from scipy.ndimage.interpolation import rotate
-from skimage.filters import sobel, gaussian, unsharp_mask
 import re
+from scipy.ndimage.measurements import center_of_mass
 #2.5 um/px
 
 ### Import image sequence ###
@@ -108,12 +105,11 @@ plt.imshow(frames[20])
 
 
 ###Bottom to Top###
-
 edge_results = pd.DataFrame(columns=['peak','x_val','frame'])
 
 def find_edges(frame, idx):
     edge_results = pd.DataFrame(columns=['peak','x_val','frame'])
-    for x in range(0,1049):
+    for x in range(0,len(frame[0])):
         pos = frame[:,x]
         c=20
         avg_pos = moving_average(pos, n=c)
@@ -123,7 +119,7 @@ def find_edges(frame, idx):
             slope.append((avg_pos[i]-avg_pos[i+c])/(c))
         peak = signal.find_peaks(-np.array(slope), prominence = 2.5)[0]
 
-        if right_peak.size == 0:
+        if peak.size == 0:
             peak = np.array([-c])
 
         edge_results = edge_results.append([{'peak': peak.min() +c,
@@ -132,42 +128,13 @@ def find_edges(frame, idx):
                                               },])
     return edge_results
     
-for idx, frame in enumerate(frames[:]):
-    edge_results.append(find_edges(frame, idx))
-    print(idx)
-#%%
-    
-for idx, frame in enumerate(frames[:]):   
-    for x in range(0,1049):
-        pos = frame[:,x]
-        c=20
-        avg_pos = moving_average(pos, n=c)
-        slope = []
-
-        for i in range(len(avg_pos)-c):
-            slope.append((avg_pos[i]-avg_pos[i+c])/(c))
-        peak = signal.find_peaks(-np.array(slope), prominence = 2.5)[0]
-
-        if right_peak.size == 0:
-            peak = np.array([-c])
-
-        edge_results = edge_results.append([{'peak': peak.min() +c,
-                                              'x_val': x,
-                                              'frame': idx,
-                                              },])
-        # edge_results = edge_results.concat[peak.max()+20, x, idx]
-    print(idx)
-    
+# for idx, frame in enumerate(frames[:]):
+#     edge_results.append(find_edges(frame, idx))
+#     print(idx)
 
 #%%
 
 ### Fit a circle to the lens ###
-
-
-from scipy import optimize
-import numpy as np
-import matplotlib.pyplot as plt
-
 
 class ComputeCurvature:
     def __init__(self):
@@ -208,8 +175,6 @@ class ComputeCurvature:
         self.xc, self.yc = center
         ri = self.calc_r(*center)
         self.r = ri.mean()
-        # self.r = 7780/2.5 
-        print(self.r)
         return 1 / self.r, self.xc, self.yc, self.r  # Return the curvature
 
 
@@ -299,10 +264,6 @@ def normal_equation(a, b, x1, y1):
         x1 *= -slope
         x1 += y1
  
-        if (x1 > 0) :
-            print("y = ", slope, "x + ", x1)
-        else :
-            print("y = ", slope, "x ", x1)
     return(slope, x1)
  
 # Driver Code
@@ -316,19 +277,196 @@ y1 = float(agg_edge.peak.iloc[50])
  
 # Function Call
 slope, y_int = normal_equation(a, b, x1, y1)
-#%%
-#rotate whol image such that the normal vector points straight up
-np.arctan(slope)
-
-test_frame = rotate(frame, angle=np.arctan(slope))
-plt.figure()
-plt.imshow(test_frame)
 
 #%%
-#Do it again for the new rotation
-for idx, frame in enumerate(new_frame[:]):
-    edge_results.append(find_edges(frame, idx))
-    print(idx)
+dir_list = pd.read_csv('F:/Angela/28102022/DirectoryList.csv').directory
+
+
+# rotation_data = pd.read_csv('F:/Johnathan/SpinningDrops/092022/30092022/2SDS/2SDSlarge_170.21Hz/Data.csv')
+rotation_data = pd.DataFrame()
+
+
+
+
+for directory in dir_list:
+    data = pd.DataFrame()
+    frames = frames = preprocess_img(pims.ImageSequence(os.path.join(directory+prefix)))
+    print(directory)
+    Aggregate_structure = pd.DataFrame()
+    for idx, frame in enumerate(frames[:]):
+        #Find edges of incorreclty oriented image
+        edges = find_edges(frame,idx)
+        
+        #Find the edges of the lens and fit a circle
+        lens_edge = edges[((edges.x_val<100) | (edges.x_val>1000))]
+        x = np.r_[pd.to_numeric(lens_edge.x_val, errors='coerce')]
+        y = np.r_[pd.to_numeric(lens_edge.peak, errors='coerce')]
+        comp_curv = ComputeCurvature()
+        curvature, xc, yc, r = comp_curv.fit(x, y)
+        
+        #Use circle to rotate image such that rotation axis is pointing upwards
+        agg_edge = edges[((edges.x_val>(xc-200)) & (edges.x_val<(xc+200)))]
+        shortest_distance = []
+        for x1 in agg_edge.x_val:
+            y1 =float(agg_edge[agg_edge.x_val ==x1].peak)
+            shortest_distance.append(np.abs(np.sqrt((x1-xc)**2 +(y1-yc)**2)-r))
+        
+        x1=np.argmax(shortest_distance)+(xc-200)
+        y1 = agg_edge[agg_edge.x_val == np.round(np.argmax(shortest_distance)+(xc-200))].peak
+        a = 2*xc
+        b = 2*yc
+        c = xc**2+yc**2-r**2
+        x1 = float(agg_edge.x_val.iloc[50])
+        y1 = float(agg_edge.peak.iloc[50])
+        
+        #Use centre of mass to rotate image
+        get_com = lambda m: np.round(np.sum(np.arange(m.shape[0])*m)/np.sum(m))
+        com = get_com(np.array(shortest_distance))
+        np.sum(np.sum((a * np.mgrid[0:len(a)])))/np.sum(a)
+     
+        # Function Call
+        slope, y_int = normal_equation(a, b, x1, y1)
+        
+        frame = rotate(frame, angle=np.arctan(slope))
+        frame = frame[:,20:1050]
+        
+        # plt.figure()
+        # plt.imshow(frames[idx])
+        # theta_fit = np.linspace(-np.pi, np.pi, 180)
+        # x_fit = comp_curv.xc + comp_curv.r*np.cos(theta_fit)
+        # y_fit = comp_curv.yc + comp_curv.r*np.sin(theta_fit)
+        # plt.plot(x_fit, y_fit, 'k--', label='fit', lw=2, color = 'red')
+        # plt.plot(x, y, 'ro', label='data', ms=8, mec='b', mew=1)
+        # plt.xlim([-500,1500])
+        # plt.ylim([-400,400])
+        # plt.xlabel('x')
+        # plt.ylabel('y')
+        # plt.title('curvature = {:.3e}'.format(curvature))
+        
+        # plt.show()
+        
+        
+        #Detect edges again in the properly rotated frame
+        edge_results = find_edges(frame, idx)
+        edge_results = edge_results.sort_values(by=['x_val'])
+        
+        #Find the location of the lens in the properly rotated frame
+        lens_edge = edge_results[((edge_results.x_val<100) | (edge_results.x_val>1000))]
+        x = np.r_[pd.to_numeric(lens_edge.x_val, errors='coerce')]
+        y = np.r_[pd.to_numeric(lens_edge.peak, errors='coerce')]
+        comp_curv = ComputeCurvature()
+        curvature, xc, yc, r = comp_curv.fit(x, y)
+        
+        # plt.figure()
+        # plt.imshow(frame)
+        # theta_fit = np.linspace(-np.pi, np.pi, 180)
+        # x_fit = comp_curv.xc + comp_curv.r*np.cos(theta_fit)
+        # y_fit = comp_curv.yc + comp_curv.r*np.sin(theta_fit)
+        # plt.plot(x_fit, y_fit, 'k--', label='fit', lw=2, color = 'red')
+        # plt.plot(x, y, 'ro', label='data', ms=8, mec='b', mew=1)
+        # plt.xlim([-500,1500])
+        # plt.ylim([-400,400])
+        # plt.xlabel('x')
+        # plt.ylabel('y')
+        # plt.title('curvature = {:.3e}'.format(curvature))
+        
+        # plt.show()
+        
+        #Subtract off y-value of lens from y-value of peak find height of aggregate
+        def find_lens_edge(x, xc, yc, r):
+            return np.sqrt(r**2-(x-xc)**2)+yc
+        
+        edge_results['y_val'] = np.array(edge_results.groupby('x_val').apply(lambda x: x.peak - find_lens_edge(x.name,xc,yc,r)))
+        height = edge_results.y_val.max()
+        
+        #Find the exact shape of the aggregate
+        bin_edges = np.arange(0, edge_results.y_val.max()+1, 1)
+        D = []
+        for i in range(len(bin_edges)-1):
+            y_bottom = bin_edges[i]
+            y_top = bin_edges[i+1]
+            
+            x_left = edge_results[(edge_results.y_val>y_bottom) & (edge_results.y_val<y_top)].x_val.min()
+            x_right = edge_results[(edge_results.y_val>y_bottom) & (edge_results.y_val<y_top)].x_val.max()
+            
+            D.append(x_right-x_left)
+        
+        D = np.array(D)
+    
+        circumfrence = np.pi*D
+        volume = np.pi*(D/2)**2
+        
+        circumfrence = circumfrence[~np.isnan(circumfrence)]
+        volume = volume[~np.isnan(volume)]
+        
+        surface_area = np.sum(circumfrence)
+        volume = np.sum(volume)
+        
+        
+        Aggregate_structure = Aggregate_structure.append([{'surface_area': surface_area,
+                                                           'volume': volume,
+                                                           'height': height,
+                                                           'frame': idx,
+                                                           },])
+        print(idx)
+    
+    filename = directory.split('/')[-2]
+    rpm = int(re.search('\d+RPM',filename).group(0).split('RPM')[0])
+    frame_rate = float(re.search('\d+.\d+Hz',filename).group(0).split('Hz')[0])
+    rotation_speed = rpm/60
+    
+    data['height'] = [Aggregate_structure['height'].mean()]
+    data['SA'] = [Aggregate_structure['surface_area'].mean()]
+    data['SA_std'] = [Aggregate_structure['surface_area'].std()]
+    data['vol'] = [Aggregate_structure['volume'].mean()]
+    data['vol_std'] = [Aggregate_structure['volume'].std()]
+    data['rotation_speed'] = [rotation_speed]
+    data['frame_rate'] = [frame_rate]
+    data['filename'] = [filename]
+    
+    rotation_data = rotation_data.append(data)
+    
+
+    
+    
+rotation_data.to_csv('F:/Angela/28102022/Data.csv')
+    
+    
+    
+#%%
+    
+edges = edge_results.groupby(['frame','peak'])
+D = edges.max()-edges.min() 
+circ = np.pi*D
+vol = np.pi*(D/2)**2
+
+Aggregate_structure['vol'] = vol.groupby('frame').sum()
+Aggregate_structure['SA'] = circ.groupby('frame').sum()
+Aggregate_structure['frame'] = Aggregate_structure.index
+
+filename = directory.split('/')[-2]
+rpm = int(re.search('\d+rpm',filename).group(0).split('rpm')[0])
+frame_rate = float(re.search('\d+.\d+ramp',filename).group(0).split('ramp')[0])
+rotation_speed = rpm/60
+
+# Aggregate_structure.to_csv(directory + 'shapeData.csv')
+
+data = pd.DataFrame()
+
+rotation_data = pd.read_csv('F:/Johnathan/SpinningDrops/092022/30092022/2SDS/2SDSlarge_170.21Hz/Data.csv')
+# rotation_data = pd.DataFrame()
+
+data['height'] = [height.mean()]
+data['SA'] = [Aggregate_structure['SA'].mean()]
+data['SA_std'] = [Aggregate_structure['SA'].std()]
+data['vol'] = [Aggregate_structure['vol'].mean()]
+data['vol_std'] = [Aggregate_structure['vol'].std()]
+data['rotation_speed'] = [rotation_speed]
+data['frame_rate'] = [frame_rate]
+data['filename'] = [filename]
+
+rotation_data = rotation_data.append(data)
+
 
 #I should make everything a function so that it is easy to repeat and easy to batch all the data
 
@@ -368,7 +506,7 @@ Aggregate_structure['frame'] = Aggregate_structure.index
 
 filename = directory.split('/')[-2]
 rpm = int(re.search('\d+rpm',filename).group(0).split('rpm')[0])
-frame_rate = float(re.search('\d+.\d+ramp',filename).group(0).split('ramp')[0])
+frame_rate = float(re.search('\d+.\d+Hz',filename).group(0).split('Hz')[0])
 rotation_speed = rpm/60
 
 # Aggregate_structure.to_csv(directory + 'shapeData.csv')

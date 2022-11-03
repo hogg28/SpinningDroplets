@@ -1,0 +1,73 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Tue Nov  1 14:16:42 2022
+
+@author: KDV Lab
+"""
+
+import numpy as np
+import pims
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
+import pandas as pd
+import os
+import matplotlib.pyplot as plt
+import matplotlib as mpl
+from scipy import signal
+from scipy import optimize
+from scipy.ndimage.interpolation import rotate
+import re
+import seaborn as sns
+
+# sns.palplot(sns.color_palette("muted"))
+
+data = pd.read_csv('F:/Angela/28102022/Data.csv', index_col=0)
+
+# Get Unique continents
+color_labels = data['loop'].unique()
+
+# List of colors in the color palettes
+rgb_values = sns.color_palette("Set2", 5)
+
+# Map continents to the colors
+color_map = dict(zip(color_labels, rgb_values))
+
+# Finally use the mapped values
+
+up = data[data.ramp =='up']
+down = data[data.ramp == 'down']
+
+# colors = {'initial':'red', 'a':'green', 'b':'blue', 'c':'yellow', 'd':'black', 'e':'orange'}
+fig, ax = plt.subplots()
+# ax.scatter(data['rotation_speed'], data['height'], c=data['loop'].map(colors), s = 200)
+
+ax.scatter(up['rotation_speed'], up['height'], c=up['loop'].map(color_map), s = 75, marker = "^")
+ax.scatter(down['rotation_speed'], down['height'], c=down['loop'].map(color_map), s = 75, marker = "v")
+plt.legend(['ramp up', 'ramp down'])
+# ax.legend(data.loop.unique())
+# plt.plot(data.rotation_speed, data.height, marker = 'o', ls='')
+plt.ylabel('height (px)')
+plt.xlabel('rotation_speed (Hz)')
+
+fig, ax = plt.subplots()
+
+ax.scatter(up['rotation_speed'], up['SA'], c=up['loop'].map(color_map), s = 75, marker = "^")
+ax.scatter(down['rotation_speed'], down['SA'], c=down['loop'].map(color_map), s = 75, marker = "v")
+# plt.plot(data.rotation_speed, data.SA, marker = 'o', ls='')
+plt.ylabel('SA (px^2)')
+plt.xlabel('rotation_speed (Hz)')
+
+fig, ax = plt.subplots()
+ax.scatter(up['rotation_speed'], up['vol'], c=up['loop'].map(color_map), s = 75, marker = "^")
+ax.scatter(down['rotation_speed'], down['vol'], c=down['loop'].map(color_map), s = 75, marker = "v")
+# plt.plot(data.rotation_speed, data.vol,  marker = 'o', ls='')
+plt.ylabel('volume (px^3)')
+plt.xlabel('rotation_speed (Hz)')
+
+# plt.figure()
+# # data.plot("rotation_speed", "height", color="colour")
+# data.plot.scatter(x='rotation_speed',
+#                   y='height',
+#                   c='colour',
+#                   colormap='viridis')
+# data.plot(color = 'loop')
