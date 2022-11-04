@@ -190,18 +190,19 @@ def normal_equation(a, b, x1, y1):
 
 #%%
 
-dir_list = pd.read_csv('D:/Angela/28102022/DirectoryList.csv').directory
+dir_list = pd.read_csv('F:/Angela/28102022/DirectoryList.csv').directory
 prefix = '*.tiff'
 
 
 
-# rotation_data = pd.read_csv('F:/Johnathan/SpinningDrops/092022/30092022/2SDS/2SDSlarge_170.21Hz/Data.csv')
+# rotation_data = pd.read_csv('F:/Angela/28102022/Data_2.csv')
 rotation_data = pd.DataFrame()
 
 
 
 
 for directory in dir_list:
+
     # directory = 'D:'+(directory.split(':')[1])
     data = pd.DataFrame()
     frames = frames = preprocess_img(pims.ImageSequence(os.path.join(directory+prefix)))
@@ -332,7 +333,7 @@ for directory in dir_list:
             D.append(x_right-x_left)
 
         D = np.array(D)
-        plt.ylim([0,600])
+        # plt.ylim([0,600])
 
         circumfrence = np.pi*D
         volume = np.pi*(D/2)**2
@@ -374,4 +375,4 @@ for directory in dir_list:
 
     
     
-rotation_data.to_csv('D:/Angela/28102022/Data_2.csv')
+rotation_data.to_csv('F:/Angela/28102022/Data_2.csv')

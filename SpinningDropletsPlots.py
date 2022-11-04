@@ -21,7 +21,7 @@ import seaborn as sns
 
 # sns.palplot(sns.color_palette("muted"))
 
-data = pd.read_csv('F:/Angela/28102022/Data.csv', index_col=0)
+data = pd.read_csv('F:/Angela/28102022/Data_2.csv', index_col=0)
 
 # Get Unique continents
 color_labels = data['loop'].unique()
@@ -40,10 +40,15 @@ down = data[data.ramp == 'down']
 # colors = {'initial':'red', 'a':'green', 'b':'blue', 'c':'yellow', 'd':'black', 'e':'orange'}
 fig, ax = plt.subplots()
 # ax.scatter(data['rotation_speed'], data['height'], c=data['loop'].map(colors), s = 200)
-
+ax.errorbar(up['rotation_speed'], up['height'], yerr=up['height_std'], ls='', capsize = 1, capthick= 0.25, elinewidth = 0.25, ms=4, mew=0.25, marker = "")
+ax.errorbar(down['rotation_speed'], down['height'], yerr=down['height_std'], ls='', capsize = 1, capthick= 0.25, elinewidth = 0.25, ms=4, mew=0.25, marker = "")
 ax.scatter(up['rotation_speed'], up['height'], c=up['loop'].map(color_map), s = 75, marker = "^")
 ax.scatter(down['rotation_speed'], down['height'], c=down['loop'].map(color_map), s = 75, marker = "v")
-plt.legend(['ramp up', 'ramp down'])
+leg = plt.legend(['ramp up', 'ramp down'], loc = 0)
+ax.add_artist(leg)
+# plt.legend(color_map)
+markers = [plt.Line2D([0,0],[0,0],color=color, marker='o', linestyle='') for color in color_map.values()]
+plt.legend(markers, color_map.keys(), numpoints=1, title = 'Loop', loc = 4)
 # ax.legend(data.loop.unique())
 # plt.plot(data.rotation_speed, data.height, marker = 'o', ls='')
 plt.ylabel('height (px)')
@@ -51,15 +56,29 @@ plt.xlabel('rotation_speed (Hz)')
 
 fig, ax = plt.subplots()
 
+ax.errorbar(up['rotation_speed'], up['SA'], yerr=up['SA_std'], ls='', capsize = 1, capthick= 0.25, elinewidth = 0.25, ms=4, mew=0.25, marker = "")
+ax.errorbar(down['rotation_speed'], down['SA'], yerr=down['SA_std'], ls='', capsize = 1, capthick= 0.25, elinewidth = 0.25, ms=4, mew=0.25, marker = "")
 ax.scatter(up['rotation_speed'], up['SA'], c=up['loop'].map(color_map), s = 75, marker = "^")
 ax.scatter(down['rotation_speed'], down['SA'], c=down['loop'].map(color_map), s = 75, marker = "v")
+leg = plt.legend(['ramp up', 'ramp down'], loc = 0)
+ax.add_artist(leg)
+# plt.legend(color_map)
+markers = [plt.Line2D([0,0],[0,0],color=color, marker='o', linestyle='') for color in color_map.values()]
+plt.legend(markers, color_map.keys(), numpoints=1, title = 'Loop', loc = 4)
 # plt.plot(data.rotation_speed, data.SA, marker = 'o', ls='')
 plt.ylabel('SA (px^2)')
 plt.xlabel('rotation_speed (Hz)')
 
 fig, ax = plt.subplots()
+ax.errorbar(up['rotation_speed'], up['vol'], yerr=up['vol_std'], ls='', capsize = 1, capthick= 0.25, elinewidth = 0.25, ms=4, mew=0.25, marker = "")
+ax.errorbar(down['rotation_speed'], down['vol'], yerr=down['vol_std'], ls='', capsize = 1, capthick= 0.25, elinewidth = 0.25, ms=4, mew=0.25, marker = "")
 ax.scatter(up['rotation_speed'], up['vol'], c=up['loop'].map(color_map), s = 75, marker = "^")
 ax.scatter(down['rotation_speed'], down['vol'], c=down['loop'].map(color_map), s = 75, marker = "v")
+leg = plt.legend(['ramp up', 'ramp down'], loc = 0)
+ax.add_artist(leg)
+# plt.legend(color_map)
+markers = [plt.Line2D([0,0],[0,0],color=color, marker='o', linestyle='') for color in color_map.values()]
+plt.legend(markers, color_map.keys(), numpoints=1, title = 'Loop', loc = 2)
 # plt.plot(data.rotation_speed, data.vol,  marker = 'o', ls='')
 plt.ylabel('volume (px^3)')
 plt.xlabel('rotation_speed (Hz)')
