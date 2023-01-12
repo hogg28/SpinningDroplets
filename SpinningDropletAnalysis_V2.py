@@ -86,15 +86,15 @@ def preprocess_img(frame):
     return frame
 
 
-directory = 'D:/Angela/28102022/2SDS_initial_4V_3V/3.0V_797RPM_13.1Hz/'
-prefix = '*.tiff'
+# directory = 'D:/Angela/28102022/2SDS_initial_4V_3V/3.0V_797RPM_13.1Hz/'
+# prefix = '*.tiff'
 
 
-plt.figure()
-frames = preprocess_img(pims.ImageSequence(os.path.join(directory+prefix)))
+# plt.figure()
+# frames = preprocess_img(pims.ImageSequence(os.path.join(directory+prefix)))
 
 
-plt.imshow(frames[20])
+# plt.imshow(frames[20])
 
 
 #%%
@@ -125,9 +125,9 @@ def find_edges(frame, idx):
                                               },])
     return edge_results
     
-for idx, frame in enumerate(frames[0:1]):
-    edge_results = (find_edges(frame, idx))
-    print(idx)
+# for idx, frame in enumerate(frames[0:1]):
+#     edge_results = (find_edges(frame, idx))
+#     print(idx)
 
 #%%
 
@@ -284,7 +284,7 @@ y1 = float(agg_edge.peak.iloc[50])
 slope, y_int = normal_equation(a, b, x1, y1)
 
 #%%
-dir_list = pd.read_csv('D:/Angela/28102022/DirectoryList.csv').directory
+dir_list = pd.read_csv('F:/Angela/122022/13122022_2SDS/DirectoryList.csv').directory
 
 
 # rotation_data = pd.read_csv('F:/Johnathan/SpinningDrops/092022/30092022/2SDS/2SDSlarge_170.21Hz/Data.csv')
@@ -465,105 +465,105 @@ for directory in dir_list:
 
     
     
-rotation_data.to_csv('D:/Angela/28102022/Data_2.csv')
+rotation_data.to_csv('F:/Angela/122022/13122022_2SDS/Data.csv')
     
     
     
 #%%
     
-edges = edge_results.groupby(['frame','peak'])
-D = edges.max()-edges.min() 
-circ = np.pi*D
-vol = np.pi*(D/2)**2
+# edges = edge_results.groupby(['frame','peak'])
+# D = edges.max()-edges.min() 
+# circ = np.pi*D
+# vol = np.pi*(D/2)**2
 
-Aggregate_structure['vol'] = vol.groupby('frame').sum()
-Aggregate_structure['SA'] = circ.groupby('frame').sum()
-Aggregate_structure['frame'] = Aggregate_structure.index
+# Aggregate_structure['vol'] = vol.groupby('frame').sum()
+# Aggregate_structure['SA'] = circ.groupby('frame').sum()
+# Aggregate_structure['frame'] = Aggregate_structure.index
 
-filename = directory.split('/')[-2]
-rpm = int(re.search('\d+rpm',filename).group(0).split('rpm')[0])
-frame_rate = float(re.search('\d+.\d+ramp',filename).group(0).split('ramp')[0])
-rotation_speed = rpm/60
+# filename = directory.split('/')[-2]
+# rpm = int(re.search('\d+rpm',filename).group(0).split('rpm')[0])
+# frame_rate = float(re.search('\d+.\d+ramp',filename).group(0).split('ramp')[0])
+# rotation_speed = rpm/60
 
-# Aggregate_structure.to_csv(directory + 'shapeData.csv')
+# # Aggregate_structure.to_csv(directory + 'shapeData.csv')
 
-data = pd.DataFrame()
+# data = pd.DataFrame()
 
-rotation_data = pd.read_csv('F:/Johnathan/SpinningDrops/092022/30092022/2SDS/2SDSlarge_170.21Hz/Data.csv')
+# # rotation_data = pd.read_csv('F:/Johnathan/SpinningDrops/092022/30092022/2SDS/2SDSlarge_170.21Hz/Data.csv')
 # rotation_data = pd.DataFrame()
 
-data['height'] = [height.mean()]
-data['SA'] = [Aggregate_structure['SA'].mean()]
-data['SA_std'] = [Aggregate_structure['SA'].std()]
-data['vol'] = [Aggregate_structure['vol'].mean()]
-data['vol_std'] = [Aggregate_structure['vol'].std()]
-data['rotation_speed'] = [rotation_speed]
-data['frame_rate'] = [frame_rate]
-data['filename'] = [filename]
+# data['height'] = [height.mean()]
+# data['SA'] = [Aggregate_structure['SA'].mean()]
+# data['SA_std'] = [Aggregate_structure['SA'].std()]
+# data['vol'] = [Aggregate_structure['vol'].mean()]
+# data['vol_std'] = [Aggregate_structure['vol'].std()]
+# data['rotation_speed'] = [rotation_speed]
+# data['frame_rate'] = [frame_rate]
+# data['filename'] = [filename]
 
-rotation_data = rotation_data.append(data)
-
-
-#I should make everything a function so that it is easy to repeat and easy to batch all the data
+# rotation_data = rotation_data.append(data)
 
 
-#%%
-plt.figure()
-# plt.plot(edge_results[edge_results.frame ==25].x_val,edge_results[edge_results.frame ==25].peak)
-plt.plot(lens_edge.x_val,lens_edge.peak)
-
-# plt.plot(edge_results[edge_results.frame ==10].left_peak,edge_results[edge_results.frame ==10].y_val, 'ro')
-# plt.plot(edge_results[edge_results.frame ==10].right_peak,edge_results[edge_results.frame ==10].y_val, 'bo')
-plt.imshow(frames[25])
-# plt.hlines(150, 20, 900, color = 'black', linestyles = 'dashed')
-#%%
-rotate(edge_results)
-#%%
-
-### Find the height of the aggregate###
-
-height = edge_results.groupby('frame').peak.max() -edge_results.groupby('frame').peak.min()
-height = np.array(height)
+# #I should make everything a function so that it is easy to repeat and easy to batch all the data
 
 
+# #%%
+# plt.figure()
+# # plt.plot(edge_results[edge_results.frame ==25].x_val,edge_results[edge_results.frame ==25].peak)
+# plt.plot(lens_edge.x_val,lens_edge.peak)
 
-### Find surface area and volume of the aggregate through volume of rotation ###
+# # plt.plot(edge_results[edge_results.frame ==10].left_peak,edge_results[edge_results.frame ==10].y_val, 'ro')
+# # plt.plot(edge_results[edge_results.frame ==10].right_peak,edge_results[edge_results.frame ==10].y_val, 'bo')
+# plt.imshow(frames[25])
+# # plt.hlines(150, 20, 900, color = 'black', linestyles = 'dashed')
+# #%%
+# rotate(edge_results)
+# #%%
 
-Aggregate_structure = pd.DataFrame()
+# ### Find the height of the aggregate###
 
-edges = edge_results.groupby(['frame','peak'])
-D = edges.max()-edges.min() 
-circ = np.pi*D
-vol = np.pi*(D/2)**2
+# height = edge_results.groupby('frame').peak.max() -edge_results.groupby('frame').peak.min()
+# height = np.array(height)
 
-Aggregate_structure['vol'] = vol.groupby('frame').sum()
-Aggregate_structure['SA'] = circ.groupby('frame').sum()
-Aggregate_structure['frame'] = Aggregate_structure.index
 
-filename = directory.split('/')[-2]
-rpm = int(re.search('\d+rpm',filename).group(0).split('rpm')[0])
-frame_rate = float(re.search('\d+.\d+Hz',filename).group(0).split('Hz')[0])
-rotation_speed = rpm/60
 
-# Aggregate_structure.to_csv(directory + 'shapeData.csv')
+# ### Find surface area and volume of the aggregate through volume of rotation ###
 
-data = pd.DataFrame()
+# Aggregate_structure = pd.DataFrame()
 
-rotation_data = pd.read_csv('F:/Johnathan/SpinningDrops/092022/30092022/2SDS/2SDSlarge_170.21Hz/Data.csv')
-# rotation_data = pd.DataFrame()
+# edges = edge_results.groupby(['frame','peak'])
+# D = edges.max()-edges.min() 
+# circ = np.pi*D
+# vol = np.pi*(D/2)**2
 
-data['height'] = [height.mean()]
-data['SA'] = [Aggregate_structure['SA'].mean()]
-data['SA_std'] = [Aggregate_structure['SA'].std()]
-data['vol'] = [Aggregate_structure['vol'].mean()]
-data['vol_std'] = [Aggregate_structure['vol'].std()]
-data['rotation_speed'] = [rotation_speed]
-data['frame_rate'] = [frame_rate]
-data['filename'] = [filename]
+# Aggregate_structure['vol'] = vol.groupby('frame').sum()
+# Aggregate_structure['SA'] = circ.groupby('frame').sum()
+# Aggregate_structure['frame'] = Aggregate_structure.index
 
-rotation_data = rotation_data.append(data)
+# filename = directory.split('/')[-2]
+# rpm = int(re.search('\d+rpm',filename).group(0).split('rpm')[0])
+# frame_rate = float(re.search('\d+.\d+Hz',filename).group(0).split('Hz')[0])
+# rotation_speed = rpm/60
 
-rotation_data.to_csv('F:/Johnathan/SpinningDrops/092022/30092022/2SDS/2SDSlarge_170.21Hz/Data.csv')
+# # Aggregate_structure.to_csv(directory + 'shapeData.csv')
+
+# data = pd.DataFrame()
+
+# rotation_data = pd.read_csv('F:/Johnathan/SpinningDrops/092022/30092022/2SDS/2SDSlarge_170.21Hz/Data.csv')
+# # rotation_data = pd.DataFrame()
+
+# data['height'] = [height.mean()]
+# data['SA'] = [Aggregate_structure['SA'].mean()]
+# data['SA_std'] = [Aggregate_structure['SA'].std()]
+# data['vol'] = [Aggregate_structure['vol'].mean()]
+# data['vol_std'] = [Aggregate_structure['vol'].std()]
+# data['rotation_speed'] = [rotation_speed]
+# data['frame_rate'] = [frame_rate]
+# data['filename'] = [filename]
+
+# rotation_data = rotation_data.append(data)
+
+# rotation_data.to_csv('F:/Johnathan/SpinningDrops/092022/30092022/2SDS/2SDSlarge_170.21Hz/Data.csv')
 
 #%%
 

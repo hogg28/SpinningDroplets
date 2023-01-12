@@ -24,6 +24,7 @@ from scipy.interpolate import interp1d
 ### Import image sequence ###
 
 mpl.rc('image', cmap='gray')
+plt.ioff()
 
 def moving_average(a, n=3) :
     ret = np.cumsum(a, dtype=float)
@@ -190,7 +191,7 @@ def normal_equation(a, b, x1, y1):
 
 #%%
 
-dir_list = pd.read_csv('F:/Angela/122022/13122022_2SDS/DirectoryList.csv').directory
+dir_list = pd.read_csv('F:/Angela/112022/25112022/DirectoryList.csv').directory
 prefix = '/*.tiff'
 
 
@@ -207,17 +208,46 @@ for directory in dir_list:
     data = pd.DataFrame()
     frames = preprocess_img(pims.ImageSequence(os.path.join(directory+prefix)))
     print(directory)
+            
+    os.mkdir(directory+'/initial_edges')
+    os.mkdir(directory+'/centre_of_mass')
+    os.mkdir(directory+'/rotated_image')
+    os.mkdir(directory+'/final_edges')
+    os.mkdir(directory+'/aggregate_structure')
+    
     Aggregate_structure = pd.DataFrame()
     for idx, frame in enumerate(frames[:]):
+        
+
+        
         #Find edges of incorreclty oriented image
         edges = find_edges(frame,idx)
         
         #Find the edges of the lens and fit a circle
         lens_edge = edges[((edges.x_val<100) | (edges.x_val>1000))]
+        # lens_edge = edges[((edges.x_val<200))]
         x = np.r_[pd.to_numeric(lens_edge.x_val, errors='coerce')]
         y = np.r_[pd.to_numeric(lens_edge.peak, errors='coerce')]
         comp_curv = ComputeCurvature()
         curvature, xc, yc, r = comp_curv.fit(x, y)
+        
+        #Plot and save figure of initial edge detection
+        plt.figure()
+        plt.imshow(frame)
+        plt.plot(edges.x_val, edges.peak, lw =5, color = 'blue')
+        theta_fit = np.linspace(-np.pi, np.pi, 180)
+        x_fit = comp_curv.xc + comp_curv.r*np.cos(theta_fit)
+        y_fit = comp_curv.yc + comp_curv.r*np.sin(theta_fit)
+        plt.plot(x_fit, y_fit, '--', label='fit', lw=2, color = 'red')
+        plt.plot(x, y, 'ro', label='data', ms=8, mec='b', mew=1)
+        plt.xlim([-500,1500])
+        plt.ylim([-50,400])
+        plt.xlabel('x')
+        plt.ylabel('y')
+        
+        plt.savefig(directory+ '/initial_edges/'+str(idx)+'.png')
+        plt.close()
+
         
         #Use circle to rotate image such that rotation axis is pointing upwards
         agg_edge = edges
@@ -227,12 +257,15 @@ for directory in dir_list:
             y1 =float(agg_edge[agg_edge.x_val ==x1].peak)
             shortest_distance.append(np.abs(np.sqrt((x1-xc)**2 +(y1-yc)**2)-r))
             
+        
+            
         #Use centre of mass to rotate image
         get_com = lambda m: np.round(np.sum(np.arange(m.shape[0])*m)/np.sum(m))
         com = get_com(np.array(shortest_distance))
 
         x1=com
         y1 = agg_edge[agg_edge.x_val == com].peak
+    
 
         a = 2*xc
         b = 2*yc
@@ -240,27 +273,36 @@ for directory in dir_list:
         x1 = float(agg_edge.x_val.iloc[int(com)])
         y1 = float(agg_edge.peak.iloc[int(com)])     
         
-     
-        # Function Call
+
         slope, y_int = normal_equation(a, b, x1, y1)
+        
+        #Plot and save centre of mass calculation
+        plt.figure()
+        plt.imshow(frame)
+        plt.plot(x1,y1,'ro')
+        
+        m = ((yc-y1)/(xc-x1))
+        b = (y1 - m*x1)
+
+        x = np.arange(500,750)
+        y = m*x+b
+
+        plt.plot(x,y)
+        # plt.xlim([-500,1500])
+        plt.ylim([0,400])
+        plt.savefig(directory+ '/centre_of_mass/'+str(idx)+'.png')
+        plt.close()
         
         frame = rotate(frame, angle=-np.arctan(slope))
         frame = frame[:,50:1050]
         
-        # plt.figure()
-        # plt.imshow(frames[idx])
-        # theta_fit = np.linspace(-np.pi, np.pi, 180)
-        # x_fit = comp_curv.xc + comp_curv.r*np.cos(theta_fit)
-        # y_fit = comp_curv.yc + comp_curv.r*np.sin(theta_fit)
-        # plt.plot(x_fit, y_fit, 'k--', label='fit', lw=2, color = 'red')
-        # plt.plot(x, y, 'ro', label='data', ms=8, mec='b', mew=1)
-        # plt.xlim([-500,1500])
-        # plt.ylim([-400,400])
-        # plt.xlabel('x')
-        # plt.ylabel('y')
-        # plt.title('curvature = {:.3e}'.format(curvature))
-        
-        # plt.show()
+        #plt and save rotated image
+        plt.figure()
+        plt.imshow(frame)
+
+        plt.savefig(directory+ '/rotated_image/'+str(idx)+'.png')
+        plt.close()
+    
         
         
         #Detect edges again in the properly rotated frame
@@ -269,25 +311,27 @@ for directory in dir_list:
         
         #Find the location of the lens in the properly rotated frame
         lens_edge = edge_results[((edge_results.x_val<100) | (edge_results.x_val>950))]
+        # lens_edge = edge_results[((edge_results.x_val<200))]
         x = np.r_[pd.to_numeric(lens_edge.x_val, errors='coerce')]
         y = np.r_[pd.to_numeric(lens_edge.peak, errors='coerce')]
         comp_curv = ComputeCurvature()
         curvature, xc, yc, r = comp_curv.fit(x, y)
         
-        # plt.figure()
-        # plt.imshow(frame)
-        # theta_fit = np.linspace(-np.pi, np.pi, 180)
-        # x_fit = comp_curv.xc + comp_curv.r*np.cos(theta_fit)
-        # y_fit = comp_curv.yc + comp_curv.r*np.sin(theta_fit)
-        # plt.plot(x_fit, y_fit, 'k--', label='fit', lw=2, color = 'red')
-        # plt.plot(x, y, 'ro', label='data', ms=8, mec='b', mew=1)
-        # plt.xlim([-500,1500])
-        # plt.ylim([-400,400])
-        # plt.xlabel('x')
-        # plt.ylabel('y')
-        # plt.title('curvature = {:.3e}'.format(curvature))
+        #plot and save edges of rotated image
+        plt.figure()
+        plt.imshow(frame)
+        plt.plot(edge_results.x_val, edge_results.peak, lw =5, color = 'blue')
+        theta_fit = np.linspace(-np.pi, np.pi, 180)
+        x_fit = comp_curv.xc + comp_curv.r*np.cos(theta_fit)
+        y_fit = comp_curv.yc + comp_curv.r*np.sin(theta_fit)
+        plt.plot(x_fit, y_fit, 'k--', label='fit', lw=2, color = 'red')
+        plt.plot(x, y, 'ro', label='data', ms=8, mec='b', mew=1)
+        plt.xlim([0,1200])
+        plt.ylim([0,400])
         
-        # plt.show()
+        plt.savefig(directory+ '/final_edges/'+str(idx)+'.png')
+        plt.close()
+
         
         #Subtract off y-value of lens from y-value of peak find height of aggregate
         def find_lens_edge(x, xc, yc, r):
@@ -313,10 +357,15 @@ for directory in dir_list:
         f = interp1d(x_val, y_val)
         x_new = np.arange(0, len(frame[0])-1,  0.05)
         y_new = f(x_new)
+        
 
         interpolated_edges = pd.DataFrame()
         interpolated_edges['x_new'] = x_new
         interpolated_edges['y_new'] = f(x_new)
+        
+        plt.figure()
+        plt.plot(x_new, f(x_new), 'ro')
+        
 
         #Find the exact shape of the aggregate
         bin_edges = np.arange(2, edge_results.y_val.max(), 1)
@@ -329,10 +378,17 @@ for directory in dir_list:
             
             x_left = interpolated_edges[(interpolated_edges.y_new>y_bottom) & (interpolated_edges.y_new<y_top)].x_new.min()
             x_right = interpolated_edges[(interpolated_edges.y_new>y_bottom) & (interpolated_edges.y_new<y_top)].x_new.max()
+            plt.plot([x_left,x_right], [i,i])
             
             D.append(x_right-x_left)
-
+        
+        plt.savefig(directory+ '/aggregate_structure/'+str(idx)+'.png')
+        plt.close()
+        
         D = np.array(D)
+        
+
+        
         # plt.ylim([0,600])
 
         circumfrence = np.pi*D
@@ -351,12 +407,14 @@ for directory in dir_list:
                                                            'height_com': height_com,
                                                            'frame': idx,
                                                            },])
+        
         print(idx)
     
     filename = directory.split('/')[-1]
     rpm = int(re.search('\d+rpm',filename).group(0).split('rpm')[0])
     frame_rate = float(re.search('\d+.\d+Hz',filename).group(0).split('Hz')[0])
     rotation_speed = rpm/60
+    Aggregate_structure.to_csv(directory+'/aggregate_structure.csv')
     
     data['height'] = [Aggregate_structure['height'].mean()]
     data['height_std'] = [Aggregate_structure['height'].std()]
@@ -375,4 +433,4 @@ for directory in dir_list:
 
     
     
-rotation_data.to_csv('F:/Angela/122022/13122022_2SDS/Data.csv')
+rotation_data.to_csv('F:/Angela/112022/25112022/Data_2.csv')
