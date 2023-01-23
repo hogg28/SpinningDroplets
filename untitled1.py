@@ -383,3 +383,26 @@ for directory in dir_list:
     
     
 rotation_data.to_csv('D:/Angela/28102022/Data_2.csv')
+
+F:/Johnathan/SpinningDrops/3SDS/19012023/30minAccumulation_2/ramp_up/3.0V_790rpm_75.00Hz
+F:/Johnathan/SpinningDrops/3SDS/19012023/30minAccumulation_2/ramp_up/3.5V_930rpm_75.00Hz
+F:/Johnathan/SpinningDrops/3SDS/19012023/30minAccumulation_2/ramp_up/4.0V_1090rpm_75.00Hz
+F:/Johnathan/SpinningDrops/3SDS/19012023/30minAccumulation_2/ramp_up/4.5V_1230rpm_75.00Hz
+F:/Johnathan/SpinningDrops/3SDS/19012023/30minAccumulation_2/ramp_up/5.0V_1390rpm_75.00Hz
+F:/Johnathan/SpinningDrops/3SDS/19012023/30minAccumulation_2/ramp_up/5.5V_1530rpm_75.00Hz
+F:/Johnathan/SpinningDrops/3SDS/19012023/30minAccumulation_2/ramp_up/6.0V_1690rpm_75.00Hz
+F:/Johnathan/SpinningDrops/3SDS/19012023/30minAccumulation_2/ramp_up/6.5V_1830rpm_75.00Hz
+F:/Johnathan/SpinningDrops/3SDS/19012023/30minAccumulation_2/ramp_up/7.0V_1990rpm_75.00Hz
+F:/Johnathan/SpinningDrops/3SDS/19012023/30minAccumulation_2/ramp_up/7.5V_2150rpm_75.00Hz
+F:/Johnathan/SpinningDrops/3SDS/19012023/30minAccumulation_2/ramp_up/8.0V_2300rpm_75.00Hz
+F:/Johnathan/SpinningDrops/3SDS/19012023/30minAccumulation_2/ramp_down/6.0V_1690rpm_75.00Hz
+F:/Johnathan/SpinningDrops/3SDS/19012023/30minAccumulation_2/ramp_down/6.5V_1830rpm_75.00Hz
+F:/Johnathan/SpinningDrops/3SDS/19012023/30minAccumulation_2/ramp_down/7.0V_1990rpm_75.00Hz
+F:/Johnathan/SpinningDrops/3SDS/19012023/30minAccumulation_2/ramp_down/7.5V_2150rpm_75.00Hz
+F:/Johnathan/SpinningDrops/3SDS/19012023/30minAccumulation_2/ramp_down/8.0V_2300rpm_75.00Hz
+F:/Johnathan/SpinningDrops/3SDS/19012023/30minAccumulation_2/ramp_down/3.0V_790rpm_75.00Hz
+F:/Johnathan/SpinningDrops/3SDS/19012023/30minAccumulation_2/ramp_down/3.5V_930rpm_75.00Hz
+F:/Johnathan/SpinningDrops/3SDS/19012023/30minAccumulation_2/ramp_down/4.0V_1090rpm_75.00Hz
+F:/Johnathan/SpinningDrops/3SDS/19012023/30minAccumulation_2/ramp_down/4.5V_1230rpm_75.00Hz
+F:/Johnathan/SpinningDrops/3SDS/19012023/30minAccumulation_2/ramp_down/5.0V_1390rpm_75.00Hz
+F:/Johnathan/SpinningDrops/3SDS/19012023/30minAccumulation_2/ramp_down/5.5V_1530rpm_75.00Hz

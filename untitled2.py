@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on Thu Nov  3 12:29:51 2022
+Created on Mon Jan 23 16:21:09 2023
 
 @author: johna
 """
@@ -22,6 +22,7 @@ from scipy.ndimage.measurements import center_of_mass
 from scipy.interpolate import interp1d
 from skimage.filters import threshold_otsu, threshold_local
 from scipy.ndimage import gaussian_filter
+from scipy.ndimage import binary_closing
 #2.5 um/px
 
 ### Import image sequence ###
@@ -80,7 +81,7 @@ def preprocess_img(frame):
     
     # frame = gaussian_filter(frame, sigma=5)
 
-    frame = frame[-700:,:]
+    frame = frame[-700:,20:-20]
     frame = np.rot90(frame)
     frame = np.rot90(frame)
 
@@ -235,6 +236,8 @@ for directory in dir_list:
         os.mkdir(directory+'/final_edges')
     if not os.path.exists(directory+'/aggregate_structure'):
         os.mkdir(directory+'/aggregate_structure')
+    if not os.path.exists(directory+'/binary'):
+        os.mkdir(directory+'/binary')
     
     Aggregate_structure = pd.DataFrame()
     for idx, frame in enumerate(frames[:]):
@@ -246,7 +249,6 @@ for directory in dir_list:
         
         #Find the edges of the lens and fit a circle
         lens_edge = edges[((edges.x_val<50) | (edges.x_val>1200))]
-        # lens_edge = edges[((edges.x_val<200))]
         x = np.r_[pd.to_numeric(lens_edge.x_val, errors='coerce')]
         y = np.r_[pd.to_numeric(lens_edge.peak, errors='coerce')]
         comp_curv = ComputeCurvature()
@@ -270,6 +272,26 @@ for directory in dir_list:
         plt.savefig(directory+ '/initial_edges/'+str(idx)+'.png')
         plt.close()
 
+    
+
+        thresh = threshold_otsu(frame)
+        binary = frame > thresh
+        
+
+        
+        def find_lens_edge(x, xc, yc, r):
+            return np.sqrt(r**2-(x-xc)**2)+yc
+        
+        edges['y_lens'] = np.array(edges.groupby('x_val').apply(lambda x: find_lens_edge(x.name,xc,yc,r)))
+        
+        for i in range(len(binary[0])):
+            for j in edges[edges.x_val==i].y_lens:
+                binary[:int(j), i] = True
+            
+        plt.figure()
+        plt.imshow(binary)
+        plt.savefig(directory+ '/binary/'+str(idx)+'.png')
+        plt.close()
         
         #Use circle to rotate image such that rotation axis is pointing upwards
         agg_edge = edges
