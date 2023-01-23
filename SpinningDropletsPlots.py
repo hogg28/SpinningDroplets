@@ -21,7 +21,7 @@ import seaborn as sns
 
 # sns.palplot(sns.color_palette("muted"))
 
-data_file = 'F:/Angela/112022/25112022/Data.csv'
+data_file = 'F:/Angela/112022/25112022/Data_3.csv'
 date = '25112022'
 
 data = pd.read_csv(data_file, index_col=0)
@@ -56,7 +56,7 @@ ax.legend(markers, color_map.keys(), numpoints=1, title = 'Loop', loc = 4)
 # plt.plot(data.rotation_speed, data.height, marker = 'o', ls='')
 plt.ylabel('height (px)')
 plt.xlabel('rotation_speed (Hz)')
-ax.set_title(date+'-height zoomed in')
+ax.set_title(date+'-height')
 fig1.tight_layout(pad = 0.2)
 plt.show()
 

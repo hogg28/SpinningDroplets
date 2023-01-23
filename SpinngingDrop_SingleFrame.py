@@ -18,9 +18,11 @@ from scipy import optimize
 from scipy.ndimage import rotate
 from scipy.interpolate import interp1d
 import re
+from scipy.ndimage import gaussian_filter
 #2.5 um/px
 
 ### Import image sequence ###
+plt.ion()
 
 mpl.rc('image', cmap='gray')
 
@@ -72,24 +74,27 @@ def auto_rotate(frame):
 @pims.pipeline
 def preprocess_img(frame):
     
+    
+    
     frame = np.rot90(frame)
     frame = np.rot90(frame)
 
     frame= auto_rotate(frame)
+    frame = gaussian_filter(frame, sigma=9)
     frame = frame[100:700,100:1150]
 
     return frame
 
 
-directory = 'D:/Angela/28102022/2SDS_loop_c_3V_6V/a_ramp_up/5.0V_1396RPM_22.8Hz/'
+directory = 'F:/Angela/112022/25112022/3SDS_loop_a_3V_4V/a_ramp_up/3.5V_904rpm_14.7Hz/'
 prefix = '*.tiff'
 
 
 plt.figure()
 frames = preprocess_img(pims.ImageSequence(os.path.join(directory+prefix)))
 
-plt.imshow(frames[20])
-frame = frames[20]
+plt.imshow(frames[11])
+frame = frames[11]
 
 #%%
 
