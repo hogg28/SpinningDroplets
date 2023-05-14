@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 """
-Created on Fri Feb 10 08:58:16 2023
+Created on Mon Jan 23 16:21:09 2023
 
 @author: johna
 """
 
+print('hi')
 import numpy as np
 import pims
 import warnings
@@ -21,14 +22,12 @@ from skimage.filters import threshold_otsu, threshold_local, unsharp_mask
 from skimage.morphology import flood_fill
 from scipy.ndimage import gaussian_filter
 from scipy.ndimage import binary_closing
-from skimage.measure import label
 from scipy import ndimage
-from scipy.signal import savgol_filter
-
 #2.5 um/px
 
 
 ### Import image sequence ###
+print('hi')
 
 mpl.rc('image', cmap='gray')
 plt.ioff()
@@ -41,69 +40,32 @@ def moving_average(a, n=3) :
 @pims.pipeline
 def preprocess_img(frame):
     
-    
+    # frame = frame.copy()
     frame = gaussian_filter(frame, sigma=4)
-    # frame = unsharp_mask(frame, radius = 15, amount = 3)
-    # frame *= 255.0/frame.max()
+    img = frame
 
-    frame = frame[:,50:1150]
-    frame = np.rot90(frame)
-    frame = np.rot90(frame)
-    frame = frame[50:800,:]
+    img = img[:,50:1150]
+    img = np.rot90(img)
+    img = np.rot90(img)
+    img = img[50:800,:]
     
-    return frame
-
-@pims.pipeline
-def raw_img(frame):
-    frame = frame[:,50:1150]
-    frame = np.rot90(frame)
-    frame = np.rot90(frame)
-    frame = frame[50:800,:]
-    
-    return frame
+    return img
 
 def find_lens_edge(x, xc, yc, r):
     return np.sqrt(r**2-(x-xc)**2)+yc
 
-# def find_edges(frame, idx):
-#     edge_results = pd.DataFrame(columns=['peak','x_val','frame'])
-#     for x in range(0,len(frame[0])):
-#         pos = frame[:,x]
-#         c=10
-#         avg_pos = moving_average(pos, n=c)
-#         slope = []
-
-#         for i in range(len(avg_pos)-c):
-#             slope.append((avg_pos[i]-avg_pos[(i+c)])/(c))
-#         # peak = signal.find_peaks(-np.array(slope), height = 0.8)[0]
-#         peak = signal.find_peaks(-np.array(slope), prominence = 0.04)[0]
-        
-#         if peak.min() > 30:
-#             peak = peak.min()
-#         else:
-#             peak = peak[1]
-
-#         if peak.size == 0:
-#             peak = np.array([-c])
-        
-
-#         edge_results = edge_results.append([{'peak': peak.min() +c,
-#                                               'x_val': x,
-#                                               'frame': idx,
-#                                               },])
-#     return edge_results
-
 def find_edges(frame, idx):
-
     edge_results = pd.DataFrame(columns=['peak','x_val','frame'])
     for x in range(0,len(frame[0])):
-        flipped = np.max(frame[0][:,x])-frame[0][:,x]
-        flippedsmooth = savgol_filter(flipped, 11, 3)
-        diffs = np.abs(np.diff(flippedsmooth))
-        maxdiff = np.max(diffs)
-        peak = signal.find_peaks(diffs,height=.3*maxdiff)[0]
+        pos = frame[:,x]
         c=10
+        avg_pos = pos
+        slope = []
 
+        for i in range(len(avg_pos)-c):
+            slope.append((avg_pos[i]-avg_pos[(i+c)])/(c))
+        # peak = signal.find_peaks(-np.array(slope), height = 0.8)[0]
+        peak = signal.find_peaks(-np.array(slope), prominence = 0.04)[0]
         
         if peak.min() > 30:
             peak = peak.min()
@@ -114,11 +76,12 @@ def find_edges(frame, idx):
             peak = np.array([-c])
         
 
-        edge_results = edge_results.append([{'peak': peak.min(),
+        edge_results = edge_results.append([{'peak': peak.min() +c,
                                               'x_val': x,
                                               'frame': idx,
                                               },])
     return edge_results
+
 class ComputeCurvature:
     def __init__(self):
         """ Initialize some variables """
@@ -211,6 +174,7 @@ def normal_equation(a, b, x1, y1):
 #%%
 
 dir_list = pd.read_csv('F:/Johnathan/SpinningDrops/2SDS/08022023/30minAccumulation_large/DirectoryList.csv').directory
+list_of_directories = pd.read_csv('F:/Johnathan/SpinningDrops/ListofDirectories_2.csv').directory
 prefix = '/*.tiff'
 
 left_edge = 1000
@@ -236,24 +200,22 @@ def rotate_math(origin, point, angle):
     return qx, qy
 
 def find_surface_area(frame,idx):
-    # print(idx)
+    print(idx)
     mpl.rc('image', cmap='gray')
     plt.ioff()
     warnings.simplefilter(action='ignore', category=FutureWarning)
     global Aggregate_structure
     Aggregate_structure = pd.DataFrame()
-    fill = flood_fill(frame, (600, 500), 255, tolerance=150)
+    
     # thresh = threshold_otsu(frame)
     # block_size = 301
     # local_thresh = threshold_local(frame, block_size, offset=10)
     # binary = frame > local_thresh
     # binary = frame > thresh
+    binary = frame > 150
     
-    # print(thresh)
-    # binary = frame > 70
-    # binary2 = frame > 150
     #Find edges of incorreclty oriented image
-    edges = find_edges(frame,idx)
+    edges = find_edges(binary,idx)
     
     #Find the edges of the lens and fit a circle
     lens_edge = edges[((edges.x_val<50) | (edges.x_val>1050))]
@@ -261,14 +223,14 @@ def find_surface_area(frame,idx):
     y = np.r_[pd.to_numeric(lens_edge.peak, errors='coerce')]
     comp_curv = ComputeCurvature()
     curvature, xc, yc, r = comp_curv.fit(x, y)
-    # print(curvature, yc)
+    print(curvature, yc)
 
     
     ''' if the curvature isn't good need to change the values for lens edges'''
     i = -1
-    while r > 4500 or r < 3500 or yc > 0:
+    while r > 5500 or r < 4000 or yc > 0:
         i+=1
-        # print(i)
+        print(i)
         lens_edge = edges[(edges.x_val>(0+i)) & (edges.x_val<(50+i)) | ((edges.x_val>(len(frame[0])-(50+i))) & (edges.x_val<(len(frame[0])-i)))]
         # lens_edge = edges[(((edges.x_val>(0+i)) & (edges.x_val<(50+i))) | (edges.x_val>(len(frame[0])-(50+i)) & (edges.x_val<(len(frame[0])-i))))]
         if i > 100:
@@ -277,12 +239,12 @@ def find_surface_area(frame,idx):
         y = np.r_[pd.to_numeric(lens_edge.peak, errors='coerce')]
         comp_curv = ComputeCurvature()
         curvature, xc, yc, r = comp_curv.fit(x, y)
-        print(r, yc, i)
+        print(r, yc)
     
     #Plot and save figure of initial edge detection
     plt.figure()
     plt.imshow(frame)
-    plt.plot(edges.x_val, edges.peak, lw =5, color = 'blue')
+    plt.plot(edges.x_val, edges.peak, lw =0.5, color = 'blue')
     theta_fit = np.linspace(-np.pi, np.pi, 180)
     x_fit = comp_curv.xc + comp_curv.r*np.cos(theta_fit)
     y_fit = comp_curv.yc + comp_curv.r*np.sin(theta_fit)
@@ -293,45 +255,42 @@ def find_surface_area(frame,idx):
     plt.xlabel('x')
     plt.ylabel('y')
     
+
+    plt.savefig(directory+ '/initial_edges_4/'+str(idx)+'.png')
+    plt.close()
     
-    y = int(edges[edges.x_val==100].peak) +200
-    print(y)
+    y = int(edges[edges.x_val==500].peak) -50
+    # binary = flood_fill(binary, (500, y), 0)
+
     
-    #What am I trying to do. I want to fit with a really high threshold to get the lens then use a smaller threshold
-    #in order to 
-    # binary = binary^binary2
-    # binary = binary&binary2
     edges['y_lens'] = np.array(edges.groupby('x_val').apply(lambda x: find_lens_edge(x.name,xc,yc,r)))
-    # binary = binary^binary2
+    
     for i in range(len(binary[0])):
         for j in edges[edges.x_val==i].y_lens:
             binary[:int(j), i] = True
-    
-    
-    # fill = flood_fill(binary2, (y, 100), 1)
-    # binary[(~fill)]=0
-    # binary = fill
-    # binary[(fill)]=0
-    
+            
     # binary = binary_closing(binary)
     binary = binary_closing(binary,iterations = 3)
     binary = np.invert(binary)
     label_im, nb_labels = ndimage.label(binary)
     sizes = ndimage.sum(binary, label_im, range(nb_labels + 1))
-    mask = sizes > 25000
-    print(sizes)
+    mask = sizes > 20000
     binary = mask[label_im]
     binary = np.invert(binary)
-
     # binary = flood_fill(binary)
     # frame = frame[40:460,40:1150]
     
     # frame = frame[np.where(binary==False)[0],np.where(binary==False)[0]]
-    masked_frame = raw_img(pims.ImageSequence(os.path.join(dir_list.iloc[-2]+prefix)))[152]
+    masked_frame = frame
     masked_frame[~(binary)]=0
+
+    
+    plt.figure()
+    plt.imshow(masked_frame)
+    plt.savefig(directory+ '/binary_4/'+str(idx)+'.png')
+    plt.close()
     
     binary = binary[20:650,20:1050]
-    binary2 = binary2[20:650,20:1050]
     
     x_left = np.where(binary == False)[1].min()
     x_right = np.where(binary == False)[1].max()
@@ -342,7 +301,7 @@ def find_surface_area(frame,idx):
     
     m = (y_right-y_left)/(int(x_right)-int(x_left))
     
-    # print(m, np.arctan(-m))
+    print(m, np.arctan(-m))
     
     angle = np.degrees(np.arctan(m))
 
@@ -355,26 +314,121 @@ def find_surface_area(frame,idx):
     
     mask = frame > 0
     
-    mask = mask[50:int(len(frame)-50),50:(len(frame[0])-50)]
-
+    mask = mask[75:int(len(frame)-75),50:(len(frame[0])-50)]
     
+    mask = np.invert(mask)
+    label_im, nb_labels = ndimage.label(mask)
+    sizes = ndimage.sum(mask, label_im, range(nb_labels + 1))
+    mask_2 = sizes > 20000
+    mask = mask_2[label_im]
+    mask = np.invert(mask)
+    
+    plt.figure()
+    plt.imshow(mask)
+    plt.savefig(directory+ '/rotated_image_4/'+str(idx)+'.png')
+    plt.close()
+    
+    D = []
+    j=0
+    for i in range(len(mask)):
+        
+        if  len(np.where(mask[i,:]==0)[0])==0:
+            continue
+        else:
+            j+=1
+            # print(np.where(mask[i,:]==0), np.where(mask[i,:]==0)[0])
+            x_left = np.where(mask[i,:]==0)[0].min()
+            x_right = np.where(mask[i,:]==0)[0].max()
+            if j ==10:
+                bottom = i
+                width = x_right-x_left
+                j =0
+            top = i
+        
+        plt.plot([x_left,x_right], [i,i])
+        
+        D.append(x_right-x_left)
+    height = top-bottom+10
+        
+    plt.ylim([25,450])
+    plt.xlim([0,1000])
+    plt.savefig(directory+ '/aggregate_structure_4/'+str(idx)+'.png')
+    plt.close()
+    
+    D = np.array(D)
 
-    return binary, masked_frame, binary2, fill
+    circumfrence = np.pi*D
+    volume = np.pi*(D/2)**2
+    
+    circumfrence = circumfrence[~np.isnan(circumfrence)]
+    volume = volume[~np.isnan(volume)]
+    
+    surface_area = np.sum(circumfrence)
+    volume = np.sum(volume)
+    
+    Aggregate_structure = Aggregate_structure.append([{'surface_area': surface_area,
+                                                       'volume': volume,
+                                                       'height': height,
+                                                       'frame': idx,
+                                                       'width': width,
+                                                       },])
+    return Aggregate_structure
 
-
-# frames = preprocess_img(pims.ImageSequence(os.path.join(dir_list.iloc[-2]+prefix)))
-frames = preprocess_img(pims.ImageSequence(os.path.join('F:/Johnathan/SpinningDrops/2SDS/09022023/15minAcummulationLarge/ramp_up/3.0V_790rpm_13.35Hz'+prefix)))
-# binary, mask, binary2, fill = find_surface_area(frames[9], 9)
-binary, mask, binary2, fill = find_surface_area(frames[20], 16)
-plt.figure()
-plt.imshow(binary)
-plt.show()
-plt.figure()
-plt.imshow(mask)
-plt.show()
-plt.figure()
-plt.imshow(binary2)
-plt.show()
-plt.figure()
-plt.imshow(fill)
-plt.show()
+trial = 0
+for list_of_dir in list_of_directories:
+    trial+=1
+    rotation_data = pd.DataFrame()
+    dir_list = pd.read_csv(list_of_dir).directory
+    for directory in dir_list:
+        data = pd.DataFrame()
+        frames = preprocess_img(pims.ImageSequence(os.path.join(directory+prefix)))
+        print(directory)
+                
+        if not os.path.exists(directory+'/initial_edges_4'):
+            os.mkdir(directory+'/initial_edges_4')
+        if not os.path.exists(directory+'/centre_of_mass'):
+            os.mkdir(directory+'/centre_of_mass')
+        if not os.path.exists(directory+'/rotated_image_4'):
+            os.mkdir(directory+'/rotated_image_4')
+        if not os.path.exists(directory+'/final_edges'):
+            os.mkdir(directory+'/final_edges')
+        if not os.path.exists(directory+'/aggregate_structure_4'):
+            os.mkdir(directory+'/aggregate_structure_4')
+        if not os.path.exists(directory+'/binary_4'):
+            os.mkdir(directory+'/binary_4')
+        
+        # for idx, frame in enumerate(frames):
+        #     Aggregate_structure = find_surface_area(frame, idx)
+    
+        from joblib import Parallel, delayed
+        Data = Parallel(n_jobs = 16)(delayed(find_surface_area)(img, num) for num, img in enumerate(frames))
+        Aggregate_structure = pd.concat(Data)
+        
+        filename = directory.split('/')[-1]
+        rpm = int(re.search('\d+rpm',filename).group(0).split('rpm')[0])
+        ramp = directory.split('/')[-2].split('_')[-1]
+        frame_rate = float(re.search('\d+.\d+Hz',filename).group(0).split('Hz')[0])
+        rotation_speed = rpm/60
+        Aggregate_structure.to_csv(directory+'/aggregate_structure.csv')
+        
+        data['height'] = [Aggregate_structure['height'].mean()]
+        data['height_std'] = [Aggregate_structure['height'].std()]
+        data['width'] = [Aggregate_structure['width'].mean()]
+        data['width_std'] = [Aggregate_structure['width'].std()]
+        data['SA'] = [Aggregate_structure['surface_area'].mean()]
+        data['SA_std'] = [Aggregate_structure['surface_area'].std()]
+        data['vol'] = [Aggregate_structure['volume'].mean()]
+        data['vol_std'] = [Aggregate_structure['volume'].std()]
+        data['ramp'] = [ramp]
+        data['loop'] = ['a']
+        data['rotation_speed'] = [rotation_speed]
+        data['frame_rate'] = [frame_rate]
+        data['filename'] = [filename]
+        data['SDS'] = [(directory.split('/')[3]).split('SDS')[0]]
+        data['Trial'] =[str(trial)]
+        
+        rotation_data = rotation_data.append(data)
+    
+    text = (directory.split('/')[:-2])
+    data_directory = '/'.join(text)+'/Data_5.csv'
+    rotation_data.to_csv(data_directory)
